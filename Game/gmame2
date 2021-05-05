@@ -1,0 +1,242 @@
+#include "level.h"
+#include "lvle.h"
+#include <SFML/Graphics.hpp>
+#include "level.h"
+#include <vector>
+#include <list>
+#include "iostream"
+#include <iostream>
+#include <sstream>
+#include <algorithm>
+//#include <iostream>
+
+Level lvl;
+
+std::vector<Object> vectr = lvl.GetAllObjects();
+
+
+
+
+
+
+
+using namespace sf;
+
+int ground = 1600;
+
+class Entity {
+public:
+    std::vector<Object> obj;
+    float dx, dy, x, y, speed, moveTimer;
+    int w, h, health;
+
+    FloatRect getRect() {//ф-ция получения прямоугольника. его коорд,размеры (шир,высот).
+        return FloatRect(x, y, w, h);//эта ф-ция нужна для проверки столкновений 
+    }
+    
+};
+
+
+class PLAYER : Entity {
+
+public:
+
+    float dx, dy; // скорость  
+    //FloatRect rect;// координата , ширина ,  высота 
+    bool onGround;// на  земле мы или нет  
+    Sprite sprite; // загружает картинку  
+    float currentFrame; // ТИКУЩИЙ КАДР ДЛЯ АНИМАЦИИ 
+    float coordinates_x, coordinates_y;
+
+    // ЗАГРУЖАЕМ КАРТИНКУ  
+    PLAYER(Texture& image, Level& lvl) //, float x, float y)
+    {
+         obj = vectr;
+        //float coordinates_x = x;
+        //float coordinates_y = y;
+
+        sprite.setTexture(image);
+        //rect = FloatRect(0, 150, 40, 50);//загружаем его координаты и размер 
+         coordinates_x = 400;
+         coordinates_y = 300;
+
+        dx = dy = 0;
+        currentFrame = 0;
+    }
+
+    void update(float time) {
+
+
+        //rect.left += dx * time;
+        coordinates_x += dx * time;
+
+        Collision(0);
+
+
+        if (!onGround) dy = dy + 0.0005 * time;// если не на земле то падаем с ускорением 
+        //rect.top += dy * time; // прибавляем к координате y  
+        coordinates_y += dy * time;
+
+        onGround = false;
+        Collision(1);
+
+
+
+        //if (coordinates_y > ground) { coordinates_y = ground; dy = 0; onGround = true; }
+
+        currentFrame += 0.005 * time;
+        if (currentFrame > 6) currentFrame -= 6;
+
+        if (dx > 0) sprite.setTextureRect(IntRect(40 * int(currentFrame), 244, 40, 50));
+        if (dx < 0) sprite.setTextureRect(IntRect(40 * int(currentFrame) + 40, 244, -40, 50));
+
+        sprite.setPosition(coordinates_x, coordinates_y);
+        //cout << coordinates_x << coordinates_y; 
+        dx = 0;
+
+    }
+
+    void Collision(int dir) 
+    {
+        /*
+        for (int i = 0; i < obj.size(); i++){//проходимся по объектам
+            if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
+            {
+                if (obj[i].name == "solid")//если встретили препятствие
+                {
+                    if (Dy > 0) { y = obj[i].rect.top - h;  dy = 0; onGround = true; }
+                    if (Dy < 0) { y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+                    if (Dx > 0) { x = obj[i].rect.left - w; }
+                    if (Dx < 0) { x = obj[i].rect.left + obj[i].rect.width; }
+                }
+            }
+         }
+*/
+
+
+
+        for (int i = 0; i < obj.size(); i++) {
+            if (getRect().intersects(obj[i].rect))//проверяем пересечение игрока с объектом
+            {
+                    if (obj[i].name == "solid")
+                    {
+                        if ((dx > 0) && (dir == 0)) coordinates_x = obj[i].rect.left - 40;
+                        if ((dx < 0) && (dir == 0)) coordinates_x = obj[i].rect.left + obj[i].rect.width;
+                        if ((dy > 0) && (dir == 1)) { coordinates_y = obj[i].rect.top - 50;  dy = 0;   onGround = true; }
+                        if ((dy < 0) && (dir == 1)) { coordinates_y = obj[i].rect.top + obj[i].rect.height;   dy = 0; }
+                    }
+
+
+
+                
+
+            }
+        }
+        
+
+
+        /*
+        for (int i = 0; i < obj.size(); i++) {
+            for (int s = coordinates_y / 32; s < (coordinates_y + 50) / 32; i++) {
+                for (int j = coordinates_x / 32; j < (coordinates_x + 40) / 32; j++)
+                {
+                    if (obj[i].name == "solid")
+                    {
+                        if ((dx > 0) && (dir == 0)) coordinates_x = j * 32 - 40;
+                        if ((dx < 0) && (dir == 0)) coordinates_x = j * 32 + 32;
+                        if ((dy > 0) && (dir == 1)) { coordinates_y = s * 32 - 50;  dy = 0;   onGround = true; }
+                        if ((dy < 0) && (dir == 1)) { coordinates_y = s * 32 + 32;   dy = 0; }
+                    }
+
+
+
+                }
+
+            }
+        }
+        */
+
+    }
+ };
+
+
+
+
+int main()
+{
+
+
+
+
+    //создаем крту 
+    Level lvl;
+    lvl.LoadFromFile("map.tmx");
+
+    sf::RenderWindow window;
+    window.create(sf::VideoMode(1600, 864), "Level.h test");
+
+    Object player = lvl.GetObject("player");//объект игрока на нашей карте.задаем координаты игроку в начале при помощи него
+
+
+    Texture t;
+    t.loadFromFile("fang.png");
+
+    PLAYER p(t, lvl); // , player.rect.left , player.rect.top);
+
+    p.sprite.setTextureRect(IntRect(32, 302, 40, 50));
+    
+
+    
+    //where_1 = player.rect.left;
+    //where_2 = player.rect.top;
+    p.sprite.setPosition(player.rect.left, player.rect.top);
+
+
+
+    Clock clock;
+
+    while (window.isOpen())
+    {
+        float time = clock.getElapsedTime().asMicroseconds();// дать прошедшее время в микросекиндах 
+        clock.restart();
+
+        time = time / 800;
+
+
+        sf::Event event;
+
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::Left))
+        {
+            p.dx = -0.1;
+
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::Right))
+        {
+            p.dx = 0.1;
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::Space))
+        {
+            if (p.onGround) { p.dy = -0.4; p.onGround = false; }
+        }
+
+        p.update(time); // функция перемещения
+
+         
+
+        // рисуем 
+        window.clear();
+        lvl.Draw(window);
+        window.draw(p.sprite);
+        window.display();
+    }
+
+    return 0;
+}
